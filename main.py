@@ -54,36 +54,42 @@ if __name__ == '__main__':
 
     while count <= limit:
         print("Searching Case Number:",casenumber)
+        try:
+            # Ever 50 cases grab a new session id.
+            if(count % 50 == 0):
+                print("Getting new session" + str(count))
+                cookiesandhtml = scrape.getCookiesandHTML()
+                cookies = cookiesandhtml['Cookies']
+                base_aspx_headers = scrape.parseASPXParameters(cookiesandhtml['HTML'])
 
-        # Ever 50 cases grab a new session id.
-        if(count % 50 == 0):
-            print("Getting new session" + str(count))
-            cookiesandhtml = scrape.getCookiesandHTML()
-            cookies = cookiesandhtml['Cookies']
-            base_aspx_headers = scrape.parseASPXParameters(cookiesandhtml['HTML'])
+            # The charges page is where we start with a case number request
+            chargehtml = scrape.getChargeHTML(cookies,casenumber,base_aspx_headers)
 
-        # The charges page is where we start with a case number request
-        chargehtml = scrape.getChargeHTML(cookies,casenumber,base_aspx_headers)
+            if(chargehtml == None):
+                #If we can't find the charges page there is no case.
+                print(casenumber,"not found")
+            else:
+                aspxheaders = scrape.parseASPXParameters(chargehtml) # Need to get new aspxheader for each tab query
 
-        if(chargehtml == None):
-            #If we can't find the charges page there is no case.
-            print(casenumber,"not found")
-        else:
-            aspxheaders = scrape.parseASPXParameters(chargehtml) # Need to get new aspxheader for each tab query
+                # Get the HTML from the tabs
+                casehistoryhtml = scrape.getTabHTML(cookies, {'btmCRROA':'CASE HISTORY (ROA)'},aspxheaders)
 
-            # Get the HTML from the tabs
-            casehistoryhtml = scrape.getTabHTML(cookies, {'btmCRROA':'CASE HISTORY (ROA)'},aspxheaders)
+                accountingHTML = scrape.getTabHTML(cookies, {'btmcrAccounting': 'Accounting'},aspxheaders)
+                calendarHTML = scrape.getTabHTML(cookies, {'btmcrCalendar': 'Calendar'},aspxheaders)
+                othercaseshtml = scrape.getTabHTML(cookies, {'btmcrOtherCases': 'Other Cases'}, aspxheaders)
 
-            accountingHTML = scrape.getTabHTML(cookies, {'btmcrAccounting': 'Accounting'},aspxheaders)
-            calendarHTML = scrape.getTabHTML(cookies, {'btmcrCalendar': 'Calendar'},aspxheaders)
-            othercaseshtml = scrape.getTabHTML(cookies, {'btmcrOtherCases': 'Other Cases'}, aspxheaders)
+                # Parse Everything
+                fullcase = scrape.parseHTML(chargehtml,casehistoryhtml,accountingHTML,calendarHTML,othercaseshtml)
 
-            # Parse Everything
-            fullcase = scrape.parseHTML(chargehtml,casehistoryhtml,accountingHTML,calendarHTML,othercaseshtml)
-
+                # pp = pprint.PrettyPrinter(indent=4)
+                # pp.pprint(fullcase)
+                sql.saveCase(casenumber,fullcase)
+            count += 1
+            casenumber = incrementCasenumber(casenumber)
+            time.sleep(1)
+        except Exception as e:
             pp = pprint.PrettyPrinter(indent=4)
             pp.pprint(fullcase)
-            sql.saveCase(casenumber,fullcase)
-        count += 1
-        casenumber = incrementCasenumber(casenumber)
-        time.sleep(1)
+            print(e)
+            print(casenumber)
+            sys.exit()
