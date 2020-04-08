@@ -5,8 +5,9 @@ from scrape import *
 from sql import testConnection
 
 class TestParse(unittest.TestCase):
+    # All the hashes are from the case number 97CR00090
     def test_caseinfo(self):
-        self.individual_parsers('charges.html','3b9d382ab012de42c57793748cbfba7f',parseCaseHeaderInformation)
+        self.individual_parsers('charges.html','6ed5c6bebbcdcfef963044040356ed48',parseCaseHeaderInformation)
     def test_chargeinfo(self):
         self.individual_parsers('charges.html','813df4651e6a23a76f0fdccbe4de842c',parseChargeInformation)
     def test_sentenceinfo(self):
@@ -28,7 +29,6 @@ class TestParse(unittest.TestCase):
 
 class TestScraper(unittest.TestCase):
     # Tests where the HTML hashes the same or they have changed the layout of their page
-    # TODO: Need to add tests for the other pages. Right now we just look at the homepage and the first charge page.
     def test_homepage(self):
         # Test if the homepage is the same as development
         livehash = hashlib.md5(getCookiesandHTML()['HTML'].encode('utf-8')).hexdigest()

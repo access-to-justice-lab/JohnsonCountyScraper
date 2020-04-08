@@ -113,15 +113,17 @@ def fix2YearDate(givendate):
 def testConnection():
     try:
         engine = db.create_engine(
-            "mysql+pymysql://" + os.environ['sql_user'] + ":" + os.environ['sql_password'] + "@" + os.environ['sql_ip'] + "/johnsoncounty?charset=utf8mb4&binary_prefix=true")
+            "mysql+pymysql://" + os.environ['sql_user'] + ":" + os.environ['sql_password'] + "@" + os.environ['sql_ip'] + "/" + os.environ['sql_schema'] +"?charset=utf8mb4&binary_prefix=true")
         engine.connect()
         return True
     except OperationalError as cred:
         print("Probably bad credentials")
+        print(os.environ['sql_user'])
         print(cred)
         return False
     except Exception as e:
         print("Other error")
+        print(os.environ['sql_user'])
         print(e)
         return False
 

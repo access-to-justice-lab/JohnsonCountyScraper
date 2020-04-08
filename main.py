@@ -3,6 +3,8 @@ import sql
 import pprint
 import time
 import sys
+import platform
+import os
 
 
 def incrementCasenumber(casenumber):
@@ -15,11 +17,29 @@ def incrementCasenumber(casenumber):
     newcasenumber = firstfour + lastnumber
     return newcasenumber
 
+# This is for easier development without having to launch docker.
+def setOSVariables():
+    # Reads the environment file and sets the OS variables.
+    # Called only on windows computers.
+    with open('env.list') as fp:
+        for line in fp:
+            key = line.strip('\n').split("=")[0]
+            value = line.strip('\n').split("=")[1]
+            print(key, value)
+            os.environ[key] = value
+
+    print(os.environ['sql_user'])
+
 if __name__ == '__main__':
     # Get the initial Cookies and ASPX Parameters
     # This way we can use the same session ID for multiple requests.
     # 20CR00095
-    if(len(sys.argv) > 1):
+
+    # Sets the os environment variables for easier testing.
+    if(platform.system() == 'Windows'):
+        setOSVariables()
+
+    if(len(sys.argv) > 2):
         # Means we have a case number
         casenumber = sys.argv[1]
         limit = int(sys.argv[2])

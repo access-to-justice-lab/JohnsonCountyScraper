@@ -142,7 +142,10 @@ def parseCaseHeaderInformation(chargehtml):
         "Defendent":None,
         "Prosecutor":None,
         "JudgeName":None,
-        "Status":None
+        "Status":None,
+        "Race":None,
+        "Sex":None,
+        "DOB":None
     }
     for header in caseinfo:
         field = soup.find(id='txt'+header)
@@ -154,12 +157,16 @@ def parseCaseHeaderInformation(chargehtml):
     #Example W/F 01/23/62
     if(caseinfo["SexRaceDob"] != "" and caseinfo["SexRaceDob"] != None):
         if(" " in caseinfo["SexRaceDob"]):
-            sr = caseinfo["SexRaceDob"].split(" ")[0]
+            sr = caseinfo["SexRaceDob"].split(" ")[0].strip()
             caseinfo["DOB"] = caseinfo["SexRaceDob"].split(" ")[1]
             if("/" in sr):
                 caseinfo['Race'] = sr.split("/")[0]
                 caseinfo['Sex'] = sr.split("/")[1]
-
+            elif(len(sr) == 1 and sr in ['M','F']):
+                    caseinfo['Sex'] = sr
+            elif(len(sr) == 1):
+                # Must be race
+                caseinfo['Race'] = sr
     return caseinfo
 def parseChargeInformation(chargehtml):
     #Grabs the charge and dispo information from the last table
