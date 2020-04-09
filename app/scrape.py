@@ -257,7 +257,7 @@ def parseLastTable(soup,headers,page):
     if(rows[0].find('th') != None):
         #Means we have headers
         headers = [] # Use the table headers
-        headersexist = True
+        headers_exist = True
         cells = rows[0].find_all('th')
         for cell in cells:
             headers.append(cell.text)
@@ -266,7 +266,7 @@ def parseLastTable(soup,headers,page):
             headers[0] = "Charge Count"
     else:
         # Means we go with the headers we're given
-        headersexist = False
+        headers_exist = False
 
     #Check if Headers have different lengths. If they do we need to investigate.
     if(len(givenheaders) != len(headers)):
@@ -275,17 +275,23 @@ def parseLastTable(soup,headers,page):
     # Start parsing actual information
     x = 0 # Represents which row
     for row in rows:
-        if(headersexist == True):
+        if(headers_exist == True):
             # Skip the first row if headers exist.
-            headersexist = False # Otherwise we end up continuing everytime
+            headers_exist = False # Otherwise we end up continuing everytime
             continue
-        y = 0 # Where in the row we are
+        y = 0 # What data row we are in (excludes header row)
         cells = row.find_all('td')
         allitems.append({})
+        # Sets a default value of None for each value.
+        # This is done for cases like 19CR01794 where the related type td is just missing.
+        for header in headers:
+            allitems[x][header] = None
         for cell in cells:
+            # Check if it's an empty field and if so save as a None
             if(normalize('NFKD',cell.text) == "" or normalize('NFKD',cell.text) == u' '):
                 allitems[x][headers[y]] = None
             else:
+                # Saves the actual field if it exists
                 allitems[x][headers[y]] = normalize('NFKD',cell.text).strip()
             y += 1
         x += 1
