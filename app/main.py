@@ -21,7 +21,7 @@ def incrementCasenumber(casenumber):
 def setOSVariables():
     # Reads the environment file and sets the OS variables.
     # Called only on windows computers.
-    with open('env.list') as fp:
+    with open('../env.list') as fp:
         for line in fp:
             key = line.strip('\n').split("=")[0]
             value = line.strip('\n').split("=")[1]
@@ -39,12 +39,20 @@ if __name__ == '__main__':
     if(platform.system() == 'Windows'):
         setOSVariables()
 
-    if(len(sys.argv) > 2):
+    # if(len(sys.argv) > 2):
+    #     # Means we have a case number
+    #     casenumber = sys.argv[1]
+    #     limit = int(sys.argv[2])
+    # else:
+    #     print("Please include system arguments: main.py [casenumber] [limit]")
+    if('startingcase' in os.environ and 'limit' in os.environ):
         # Means we have a case number
-        casenumber = sys.argv[1]
-        limit = int(sys.argv[2])
+        casenumber = os.environ['startingcase']
+        limit = int(os.environ['limit'])
     else:
-        print("Please include system arguments: main.py [casenumber] [limit]")
+        print("docker run --env-file env.list --env startingcase=20CR00830 --env limit=5 -t --name joco joco_server")
+        print(os.environ['startingcase'],os.environ['limit'])
+        sys.exit(1)
 
 
     cookiesandhtml = scrape.getCookiesandHTML()
@@ -63,7 +71,7 @@ if __name__ == '__main__':
                 base_aspx_headers = scrape.parseASPXParameters(cookiesandhtml['HTML'])
 
             # The charges page is where we start with a case number request
-            chargehtml = scrape.getChargeHTML(cookies,casenumber,base_aspx_headers)
+            chargehtml = scrape.getChargeHTML(cookies, casenumber, base_aspx_headers)
 
             if(chargehtml == None):
                 #If we can't find the charges page there is no case.
@@ -72,24 +80,25 @@ if __name__ == '__main__':
                 aspxheaders = scrape.parseASPXParameters(chargehtml) # Need to get new aspxheader for each tab query
 
                 # Get the HTML from the tabs
-                casehistoryhtml = scrape.getTabHTML(cookies, {'btmCRROA':'CASE HISTORY (ROA)'},aspxheaders)
+                casehistoryhtml = scrape.getTabHTML(cookies, {'btmCRROA': 'CASE HISTORY (ROA)'}, aspxheaders)
 
-                accountingHTML = scrape.getTabHTML(cookies, {'btmcrAccounting': 'Accounting'},aspxheaders)
-                calendarHTML = scrape.getTabHTML(cookies, {'btmcrCalendar': 'Calendar'},aspxheaders)
+                accountingHTML = scrape.getTabHTML(cookies, {'btmcrAccounting': 'Accounting'}, aspxheaders)
+                calendarHTML = scrape.getTabHTML(cookies, {'btmcrCalendar': 'Calendar'}, aspxheaders)
                 othercaseshtml = scrape.getTabHTML(cookies, {'btmcrOtherCases': 'Other Cases'}, aspxheaders)
 
                 # Parse Everything
-                fullcase = scrape.parseHTML(chargehtml,casehistoryhtml,accountingHTML,calendarHTML,othercaseshtml)
+                fullcase = scrape.parseHTML(chargehtml, casehistoryhtml, accountingHTML, calendarHTML, othercaseshtml)
 
                 # pp = pprint.PrettyPrinter(indent=4)
                 # pp.pprint(fullcase)
-                sql.saveCase(casenumber,fullcase)
+                sql.saveCase(casenumber, fullcase)
             count += 1
             casenumber = incrementCasenumber(casenumber)
             time.sleep(1)
         except Exception as e:
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(fullcase)
+            if(fullcase != None):
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(fullcase)
             print(e)
             print(casenumber)
             sys.exit()

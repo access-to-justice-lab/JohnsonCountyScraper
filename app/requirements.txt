@@ -1,0 +1,7 @@
+pprint
+sqlalchemy
+pymysql
+bs4
+requests
+lxml
+PyMySQL[rsa]

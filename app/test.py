@@ -1,8 +1,9 @@
 import unittest
+from scrape import *
+from sql import *
 import hashlib
 import json
-from scrape import *
-from sql import testConnection
+
 
 class TestParse(unittest.TestCase):
     # All the hashes are from the case number 97CR00090
@@ -21,7 +22,7 @@ class TestParse(unittest.TestCase):
     def test_accounting(self):
         self.individual_parsers('accounting.html','2a7af3585d28c29739b8e12db5ae9f74',parseAccountingHTML)
     def individual_parsers(self,htmlfile,hash,func):
-        with open(htmlfile, 'r') as file:
+        with open('htmldocs/' + htmlfile, 'r') as file:
             html = file.read().replace('\n', '')
         jsonresults = json.dumps(func(html))
         result = hashlib.md5(jsonresults.encode('utf-8'))

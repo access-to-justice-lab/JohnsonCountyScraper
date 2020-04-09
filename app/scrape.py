@@ -2,11 +2,9 @@ import requests
 from lxml.html import fromstring
 import bs4
 import sys
-import hashlib
-import json
 
 from unicodedata import normalize
-from sql import saveCase
+
 
 def getCookiesandHTML():
     url = "http://www.jococourts.org/"
@@ -47,11 +45,18 @@ def getChargeHTML(cookies,casenumber,aspxheaders):
         resp = requests.post(url, data=params, headers=headers, timeout=120,cookies=cookieparams)
         title = fromstring(resp.content).findtext('.//title').strip()
         if(title == 'Johnson County Kansas District Court Document Search'):
-            #Means Case Not Found we're back on the homepage
+            # Means Case Not Found we're back on the homepage
             return None
         elif(title == 'Disposition'):
-            #Means we found the page
-            return resp.text
+            # Means we found the page
+            # We still need to check if there is an <h2> tag that says No Case Found
+            soup = bs4.BeautifulSoup(resp.text,'lxml')
+            h2 = soup.find("h2")
+            if (h2 != None and h2.text.strip() == "No Case Found"):
+                return None
+            else:
+                # Means we did find the case
+                return resp.text
         else:
             #Not sure what this means
             print("Unknown Title")

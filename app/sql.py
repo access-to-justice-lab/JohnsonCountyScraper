@@ -157,7 +157,6 @@ def saveCase(casenumber,casedictionary):
 
     # Add Charges
     for charge in casedictionary['charges']:
-        print(charge)
         tempcharge = Charges(
             casenumber=caseinfodictionary['CaseNo'],
             acs=charge['ACS'],

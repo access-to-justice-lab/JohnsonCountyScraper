@@ -1,5 +1,6 @@
 env.list
-windows.py
+app/windows.py
 joco_venv
 __pycache__
 .idea
+app/__init__.py
