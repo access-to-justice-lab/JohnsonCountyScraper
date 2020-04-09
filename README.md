@@ -12,7 +12,7 @@ Make sure to create a schema called johnsoncounty that the user above has access
 ## Docker
 docker build -t joco_server .
 docker run --env-file env.list -itd -v ${PWD}:/app --name joco joco_server
-docker run --env-file env.list --env startingcase=20CR00830 --env limit=5 --rm -dit --name joco joco_server
+docker run --env-file env.list --env startingcase=20CR00001 --env limit=5 -t --name joco joco_server
 
 ## Python Testing
 To run all tests
