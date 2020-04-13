@@ -161,7 +161,7 @@ def parseCaseHeaderInformation(chargehtml):
     # Example W/F 01/23/62
     # There are variations of this like " /M 6/25/73" in case number 15CR00913
     if(caseinfo["SexRaceDob"] != "" and caseinfo["SexRaceDob"] != None):
-        if(" " in caseinfo["SexRaceDob"]):
+        if(" " in caseinfo["SexRaceDob"].strip()):
             sr = caseinfo["SexRaceDob"].strip().split(" ")[0].strip()
             caseinfo["DOB"] = caseinfo["SexRaceDob"].strip().split(" ")[1]
             if("/" in sr):
@@ -172,6 +172,10 @@ def parseCaseHeaderInformation(chargehtml):
             elif(len(sr) == 1):
                 # Must be race
                 caseinfo['Race'] = sr
+        elif(caseinfo["SexRaceDob"].strip().count('/') == 2 and caseinfo["SexRaceDob"].strip().replace("/","").isdecimal()):
+            # Means we have just the dob. No race or sex. See case number 14CR01306
+            # This checks to see if there are just two slashes in the string which indicates a dob. 4/4/02.
+            caseinfo["DOB"] = caseinfo["SexRaceDob"].strip()
     return caseinfo
 def parseChargeInformation(chargehtml):
     # Grabs the charge and dispo information from the last table

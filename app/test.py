@@ -3,7 +3,7 @@ from scrape import *
 from sql import *
 import hashlib
 import json
-
+import os
 
 class TestParse(unittest.TestCase):
     # All the hashes are from the case number 97CR00090
@@ -45,5 +45,22 @@ class TestScraper(unittest.TestCase):
 class TestSQL(unittest.TestCase):
     def testSQLCredentials(self):
         self.assertTrue(testConnection())
+
+def setOSVariables():
+    # Reads the environment file and sets the OS variables.
+    # Called only on windows computers.
+    with open('../env.list') as fp:
+        for line in fp:
+            key = line.strip('\n').split("=")[0]
+            value = line.strip('\n').split("=")[1]
+            print(key, value)
+            os.environ[key] = value
+    # The IP needed from a docker container is different from the one run on windows.
+    os.environ['sql_ip'] = 'localhost'
+    print(os.environ['sql_user'])
+
 if __name__ == '__main__':
+    # Needed to set os variables outside of docker for development
+    setOSVariables()
+
     unittest.main()
