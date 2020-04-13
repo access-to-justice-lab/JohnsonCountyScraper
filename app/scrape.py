@@ -8,7 +8,7 @@ from unicodedata import normalize
 
 def getCookiesandHTML():
     url = "http://www.jococourts.org/"
-    #Make the HTTP Request
+    # Make the HTTP Request
     try:
         resp = requests.get(url)
         title = fromstring(resp.content).findtext('.//title').strip()
@@ -82,14 +82,14 @@ def getTabHTML(cookies,tab,aspxheaders):
         resp = requests.post(url, data=params, headers=headers, timeout=120,cookies=cookieparams)
         title = fromstring(resp.content).findtext('.//title').strip()
         if(title == 'Johnson County Kansas District Court Document Search'):
-            #Means Case Not Found we're back on the homepage
+            # Means Case Not Found we're back on the homepage
             return None
 
         elif(title in ['CASE HISTORY (ROA)', 'Payment Information','Calendar', 'Other Cases']):
-            #Means we found the page
+            # Means we found the page
             return resp.text
         else:
-            #Not sure what this means
+            # Not sure what this means
             print("Unknown Title")
             sys.exit(0)
     except Exception as e:
@@ -113,7 +113,6 @@ def parseHTML(chargehtml,casehistoryhtml,accountinghtml,calendarhtml,othercasesh
     fullcase = {}
 
     fullcase['caseinfo'] = parseCaseHeaderInformation(chargehtml)
-    # print(hashlib.md5(json.dumps(fullcase['caseinfo']).encode('utf-8')).hexdigest())
 
     fullcase['charges'] = parseChargeInformation(chargehtml)
     fullcase['sentence'] = parseSentenceInfo(chargehtml)
@@ -131,9 +130,9 @@ def parseHTML(chargehtml,casehistoryhtml,accountinghtml,calendarhtml,othercasesh
     fullcase['othercases'] = parseOtherCasesHTML(othercaseshtml)
     return fullcase
 def parseCaseHeaderInformation(chargehtml):
-    #Look up the basic case filing information and defendant information.
-    #This is all held in the input tags at the top.
-    #Cycle through all the IDs of the input tags and capture the value attribute or leave blank.
+    # Look up the basic case filing information and defendant information.
+    # This is all held in the input tags at the top.
+    # Cycle through all the IDs of the input tags and capture the value attribute or leave blank.
     soup = bs4.BeautifulSoup(chargehtml,'lxml')
     caseinfo = {
         "CaseNo":None,
@@ -155,15 +154,16 @@ def parseCaseHeaderInformation(chargehtml):
     for header in caseinfo:
         field = soup.find(id='txt'+header)
         if(field != None and field.has_attr('value')):
-            #Check to make sure it has a value field
+            # Check to make sure it has a value field
             caseinfo[header] = field['value']
 
-    #Seperate Race/Gender and DOB
-    #Example W/F 01/23/62
+    # Seperate Race/Gender and DOB
+    # Example W/F 01/23/62
+    # There are variations of this like " /M 6/25/73" in case number 15CR00913
     if(caseinfo["SexRaceDob"] != "" and caseinfo["SexRaceDob"] != None):
         if(" " in caseinfo["SexRaceDob"]):
-            sr = caseinfo["SexRaceDob"].split(" ")[0].strip()
-            caseinfo["DOB"] = caseinfo["SexRaceDob"].split(" ")[1]
+            sr = caseinfo["SexRaceDob"].strip().split(" ")[0].strip()
+            caseinfo["DOB"] = caseinfo["SexRaceDob"].strip().split(" ")[1]
             if("/" in sr):
                 caseinfo['Race'] = sr.split("/")[0]
                 caseinfo['Sex'] = sr.split("/")[1]
@@ -174,10 +174,10 @@ def parseCaseHeaderInformation(chargehtml):
                 caseinfo['Race'] = sr
     return caseinfo
 def parseChargeInformation(chargehtml):
-    #Grabs the charge and dispo information from the last table
-    #Cycles through all the rows and assigns them to the table headers.
-    #Hopefully the table headers don't change!
-    #Note there are some charges that are "Amended" but look like a second charge. 97CR00090
+    # Grabs the charge and dispo information from the last table
+    # Cycles through all the rows and assigns them to the table headers.
+    # Hopefully the table headers don't change!
+    # Note there are some charges that are "Amended" but look like a second charge. 97CR00090
     soup = bs4.BeautifulSoup(chargehtml, 'lxml')
     return parseLastTable(soup,headers= [
         'Charge Number',
@@ -204,10 +204,9 @@ def parseSentenceInfo(chargehtml):
     for header in sentenceinfo:
         field = soup.find(id='txt'+header)
         if(field != None and field.has_attr('value')):
-            #Check to make sure it has a value field
+            # Check to make sure it has a value field
             sentenceinfo[header] = field['value']
     return sentenceinfo
-    #[print(key,":", value) for key, value in sentenceinfo.items()]
 def parseCaseHistory(casehistoryhtml):
     #Gets the case history notes from the html
     soup = bs4.BeautifulSoup(casehistoryhtml, 'lxml')
@@ -239,15 +238,15 @@ def parseOtherCasesHTML(othercaseshtml):
         'Related Type'
     ],page='Other Cases')
 def parseLastTable(soup,headers,page):
-    #Returns the information based on the last table
-    #This works for accounting, history, and charges
-    #Need to add in a feature that will checked if there are an unexpected number of columns.
+    # Returns the information based on the last table
+    # This works for accounting, history, and charges
+    # Need to add in a feature that will checked if there are an unexpected number of columns.
     allitems = []
     givenheaders = headers
     dispotable = soup.find_all('table')[-1]
     rows = dispotable.find_all("tr")
 
-    #Check if <h2> No xxx Found </h2> is set.
+    # Check if <h2> No xxx Found </h2> is set.
     h2 = soup.find("h2")
     if(h2 != None and h2.text[0:2] == "No"):
         # Means we dont have any information for this. See 97CR00097 on the other cases tab.
@@ -255,7 +254,7 @@ def parseLastTable(soup,headers,page):
 
     # Get headers if they exist (not it Case History)
     if(rows[0].find('th') != None):
-        #Means we have headers
+        # Means we have headers
         headers = [] # Use the table headers
         headers_exist = True
         cells = rows[0].find_all('th')
@@ -268,7 +267,7 @@ def parseLastTable(soup,headers,page):
         # Means we go with the headers we're given
         headers_exist = False
 
-    #Check if Headers have different lengths. If they do we need to investigate.
+    # Check if Headers have different lengths. If they do we need to investigate.
     if(len(givenheaders) != len(headers)):
         print("WARNING: We don't have same headers",page)
         sys.exit(1)
@@ -295,7 +294,5 @@ def parseLastTable(soup,headers,page):
                 allitems[x][headers[y]] = normalize('NFKD',cell.text).strip()
             y += 1
         x += 1
-    # for singleitem in allitems:
-    #     [print(key,":", value) for key, value in singleitem.items()]
     return allitems
 

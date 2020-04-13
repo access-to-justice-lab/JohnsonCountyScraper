@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
 import os
+import sys
 
 # This file connects to the mysql database and saves the case information.
 # The credentials are gathered from the os.environ field designed to be passed by docker.
@@ -128,95 +129,102 @@ def testConnection():
         return False
 
 def saveCase(casenumber,casedictionary):
-    engine = db.create_engine(
-        "mysql+pymysql://" + os.environ['sql_user'] + ":" + os.environ['sql_password'] + "@" + os.environ['sql_ip'] + "/johnsoncounty?charset=utf8mb4&binary_prefix=true")
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    Base.metadata.create_all(engine)
-    caseinfodictionary = casedictionary['caseinfo']
+    try:
+        engine = db.create_engine(
+            "mysql+pymysql://" + os.environ['sql_user'] + ":" + os.environ['sql_password'] + "@" + os.environ['sql_ip'] + "/johnsoncounty?charset=utf8mb4&binary_prefix=true")
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        Base.metadata.create_all(engine)
+        caseinfodictionary = casedictionary['caseinfo']
 
-    # Add Case Header Information
-    caseinfosql = CaseInfo(
-        casenumber=caseinfodictionary['CaseNo'],
-        def_fname=caseinfodictionary['FName'],
-        def_mname=caseinfodictionary['MName'],
-        def_lname=caseinfodictionary['LName'],
-        sufix=caseinfodictionary['Sufix'],
-        dob=fix2YearDate(caseinfodictionary['DOB']),
-        race=caseinfodictionary['Race'],
-        sex=caseinfodictionary['Sex'],
-        sexracedob=caseinfodictionary['SexRaceDob'],
-        probofficer=caseinfodictionary['ProbOfficer'],
-        prosecutor=caseinfodictionary['Prosecutor'],
-        defendantattorney=caseinfodictionary['Defendent'],
-        division=caseinfodictionary['Div'],
-        judge=caseinfodictionary['JudgeName'],
-        status=caseinfodictionary['Status'],
-        timestamp=datetime.now())
-    session.add(caseinfosql)
-
-    # Add Charges
-    for charge in casedictionary['charges']:
-        tempcharge = Charges(
+        # Add Case Header Information
+        caseinfosql = CaseInfo(
             casenumber=caseinfodictionary['CaseNo'],
-            acs=charge['ACS'],
-            chargecount=charge['Charge Count'],
-            date=fix2YearDate(charge['Date']),
-            drug=charge['Drug'],
-            finding=charge['Finding'],
-            lvl=charge['LVL'],
-            pl=charge['PL'],
-            pn=charge['PN'],
-            section=charge['Section'],
-            sentdate=fix4YearDate(charge['Sent Date']),
-            tp=charge['TP'],
-            title=charge['Title']
+            def_fname=caseinfodictionary['FName'],
+            def_mname=caseinfodictionary['MName'],
+            def_lname=caseinfodictionary['LName'],
+            sufix=caseinfodictionary['Sufix'],
+            dob=fix2YearDate(caseinfodictionary['DOB']),
+            race=caseinfodictionary['Race'],
+            sex=caseinfodictionary['Sex'],
+            sexracedob=caseinfodictionary['SexRaceDob'],
+            probofficer=caseinfodictionary['ProbOfficer'],
+            prosecutor=caseinfodictionary['Prosecutor'],
+            defendantattorney=caseinfodictionary['Defendent'],
+            division=caseinfodictionary['Div'],
+            judge=caseinfodictionary['JudgeName'],
+            status=caseinfodictionary['Status'],
+            timestamp=datetime.now())
+        session.add(caseinfosql)
+
+        # Add Charges
+        for charge in casedictionary['charges']:
+            tempcharge = Charges(
+                casenumber=caseinfodictionary['CaseNo'],
+                acs=charge['ACS'],
+                chargecount=charge['Charge Count'],
+                date=fix2YearDate(charge['Date']),
+                drug=charge['Drug'],
+                finding=charge['Finding'],
+                lvl=charge['LVL'],
+                pl=charge['PL'],
+                pn=charge['PN'],
+                section=charge['Section'],
+                sentdate=fix4YearDate(charge['Sent Date']),
+                tp=charge['TP'],
+                title=charge['Title']
+            )
+            session.add(tempcharge)
+
+        # Add Other Cases
+        for othercase in casedictionary['othercases']:
+            tempot = OtherCases(
+                casenumber=caseinfodictionary['CaseNo'],
+                othercase=othercase['Other Cases'],
+                relatedtype=othercase['Related Type'])
+            session.add(tempot)
+
+        # Add Case History
+        for casenote in casedictionary['case history']:
+            casetemp = CaseHistory(
+                casenumber=caseinfodictionary['CaseNo'],
+                notedate=fix4YearDate(casenote['Date']),
+                note=casenote['Note'])
+            session.add(casetemp)
+
+        # Add Calendar
+        for calendarevent in casedictionary['calendar']:
+            caltemp = Calendar(
+                casenumber=caseinfodictionary['CaseNo'],
+                courtdate=fix2YearDate(calendarevent['Court Date']),
+                courttime = calendarevent['Court Time'],
+                division = calendarevent['Division'],
+                proceedingtype = calendarevent['Proceeding Type'])
+            session.add(caltemp)
+
+        # Add Accounting
+        for accountingevent in casedictionary['accounting']:
+            acct = Accounting(
+                casenumber=caseinfodictionary['CaseNo'],
+                amountpaid=accountingevent['AMOUNT PAID'],
+                assessedamount = accountingevent['ASSESSED AMOUNT'],
+                assessedtype = accountingevent['ASSESSED TYPE'],
+                balance = accountingevent['BALANCE'])
+            session.add(acct)
+
+        # Add Sentence
+        sent = Sentence(
+            casenumber = caseinfodictionary['CaseNo'],
+            finjail = casedictionary['sentence']['FinJail'],
+            orijail = casedictionary['sentence']['OriJail'],
+            oriprob = casedictionary['sentence']['OriProb'],
+            suspjail = casedictionary['sentence']['SuspJail']
         )
-        session.add(tempcharge)
-
-    # Add Other Cases
-    for othercase in casedictionary['othercases']:
-        tempot = OtherCases(
-            casenumber=caseinfodictionary['CaseNo'],
-            othercase=othercase['Other Cases'],
-            relatedtype=othercase['Related Type'])
-        session.add(tempot)
-
-    # Add Case History
-    for casenote in casedictionary['case history']:
-        casetemp = CaseHistory(
-            casenumber=caseinfodictionary['CaseNo'],
-            notedate=fix4YearDate(casenote['Date']),
-            note=casenote['Note'])
-        session.add(casetemp)
-
-    # Add Calendar
-    for calendarevent in casedictionary['calendar']:
-        caltemp = Calendar(
-            casenumber=caseinfodictionary['CaseNo'],
-            courtdate=fix2YearDate(calendarevent['Court Date']),
-            courttime = calendarevent['Court Time'],
-            division = calendarevent['Division'],
-            proceedingtype = calendarevent['Proceeding Type'])
-        session.add(caltemp)
-
-    # Add Accounting
-    for accountingevent in casedictionary['accounting']:
-        acct = Accounting(
-            casenumber=caseinfodictionary['CaseNo'],
-            amountpaid=accountingevent['AMOUNT PAID'],
-            assessedamount = accountingevent['ASSESSED AMOUNT'],
-            assessedtype = accountingevent['ASSESSED TYPE'],
-            balance = accountingevent['BALANCE'])
-        session.add(acct)
-
-    # Add Sentence
-    sent = Sentence(
-        casenumber = caseinfodictionary['CaseNo'],
-        finjail = casedictionary['sentence']['FinJail'],
-        orijail = casedictionary['sentence']['OriJail'],
-        oriprob = casedictionary['sentence']['OriProb'],
-        suspjail = casedictionary['sentence']['SuspJail']
-    )
-    session.add(sent)
-    session.commit()
+        session.add(sent)
+        result = session.commit()
+    except Exception as e:
+        print("SQL Save Error")
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        raise

@@ -41,22 +41,17 @@ if __name__ == '__main__':
     # This way we can use the same session ID for multiple requests.
     # 20CR00095
     print("Starting the Joco Scraper")
-    # Sets the os environment variables for easier testing.
+
+    # Sets the os environment variables if running outside docker on a windows machine for easier development.
     if(platform.system() == 'Windows'):
         setOSVariables()
 
-    # if(len(sys.argv) > 2):
-    #     # Means we have a case number
-    #     casenumber = sys.argv[1]
-    #     limit = int(sys.argv[2])
-    # else:
-    #     print("Please include system arguments: main.py [casenumber] [limit]")
     if('startingcase' in os.environ and 'limit' in os.environ):
         # Means we have a case number
         casenumber = os.environ['startingcase']
         limit = int(os.environ['limit'])
     else:
-        print("docker run --env-file env.list --env startingcase=20CR00830 --env limit=5 -t --name joco joco_server")
+        print("docker run --env-file env.list --env startingcase=20CR00830 --env limit=5 --name joco joco_server")
         print(os.environ['startingcase'],os.environ['limit'])
         sys.exit(1)
 
@@ -102,10 +97,11 @@ if __name__ == '__main__':
             casenumber = incrementCasenumber(casenumber)
             time.sleep(1)
         except Exception as e:
-            print(e)
             if(fullcase != None):
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(fullcase)
             print(casenumber)
-            print(e)
-            sys.exit()
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            sys.exit(1)
